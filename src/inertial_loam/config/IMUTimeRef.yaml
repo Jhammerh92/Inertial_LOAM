@@ -1,0 +1,5 @@
+/IMUTimeRef:
+  ros__parameters:
+    imu_topic_in: /imu/data
+    imu_topic_out: /imu/data_raw_time_ref
+    use_sim_time: false

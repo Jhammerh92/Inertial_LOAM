@@ -1,0 +1,6 @@
+livox_imu_converter:
+  ros__parameters:
+    imu_topic_in: "/livox/imu"
+    imu_topic_out: "/livox/data_raw"
+    g_scale: 9.815
+    

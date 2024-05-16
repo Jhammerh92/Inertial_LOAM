@@ -8,7 +8,7 @@ endif()
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -17,9 +17,92 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+#find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(ndt_omp_ros2 REQUIRED)
+find_package(PCL REQUIRED)
+find_package(pclomp REQUIRED)
+find_package(OpenMP)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+
+include_directories(
+  include
+  ${EIGEN3_INCLUDE_DIR}
+  ${PCL_INCLUDE_DIRS}
+)
+link_directories(
+  ${PCL_LIBRARY_DIRS}
+)
+
+set(dependencies "std_msgs" "std_srvs" "rclcpp" "geometry_msgs" "sensor_msgs" "tf2" "tf2_geometry_msgs" "sensor_msgs" "pcl_conversions" "pcl_ros" "nav_msgs" "ndt_omp_ros2")
+
+
+add_executable(lidar_odometry src/LidarOdometry.cpp)
+ament_target_dependencies(lidar_odometry ${dependencies})
+# target_link_libraries(lidar_odometry ins_)
+
+add_executable(preprocessing src/Preprocessing.cpp)
+ament_target_dependencies(preprocessing ${dependencies})
+
+add_executable(loam_backend src/Backend.cpp)
+ament_target_dependencies(loam_backend ${dependencies})
+
+# add_executable(imu_filter src/IMUFilter.cpp)
+# ament_target_dependencies(imu_filter ${dependencies})
+
+add_executable(imu_time_ref src/IMUTimeRef.cpp)
+ament_target_dependencies(imu_time_ref ${dependencies})
+
+add_executable(livox_imu_converter src/livox_imu_converter.cpp)
+ament_target_dependencies(livox_imu_converter ${dependencies})
+
+install(TARGETS 
+  lidar_odometry
+  preprocessing
+  loam_backend
+  # imu_filter
+  imu_time_ref
+  livox_imu_converter
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+
+## Mark cpp header files for installation
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION include/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.hpp"
+  PATTERN ".svn" EXCLUDE
+)
+
+
+install(DIRECTORY
+  launch
+  rviz
+  config
+  urdf
+  DESTINATION share/${PROJECT_NAME}
+)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

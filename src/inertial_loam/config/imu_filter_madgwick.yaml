@@ -1,0 +1,20 @@
+imu_madgwick_filter:
+  ros__parameters:
+    stateless: false
+    use_mag: false
+    publish_tf: true
+    reverse_tf: false
+    fixed_frame: "odom"
+    constant_dt: 0.0 # set to 0.0 to use the msg time deltas as dt
+    publish_debug_topics: false
+    world_frame: "enu"
+    gain: 0.1
+    zeta: 0.0
+    mag_bias_x: 0.0
+    mag_bias_y: 0.0
+    mag_bias_z: 0.0
+    orientation_stddev: 0.0
+    remove_gravity_vector: true
+    # imu_topic_sub: "/imu/data_raw" # change here to change which imu is used in the setup, either: "/imu/data_raw" or "/livox/data_raw"
+    # imu_topic_sub: "/imu/data_raw_time_ref" # change here to change which imu is used in the setup, either: "/imu/data_raw" or "/livox/data_raw"
+    imu_topic_sub: "/livox/data_raw" # change here to change which imu is used in the setup, either: "/imu/data_raw" or "/livox/data_raw"
