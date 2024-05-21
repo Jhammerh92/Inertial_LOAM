@@ -1,1 +1,0 @@
-package_name = 'inertial_loam'
