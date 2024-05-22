@@ -9,7 +9,7 @@ preprocessing:
     # if both of the following are 0 no normals will be calculated
     
     pc_normal_search_radius: 0.0 # this is currently not used as it is not robust to variation in the cloud size which is apparent for pc from the livox lidar. large scale is 2.0, small scale is 0.2
-    pc_normal_knn_points: 25 # This is currently used over search_radius, 30
+    pc_normal_knn_points: 15 # This is currently used over search_radius, 30
     
     edge_threshold: 0.5
     surfaces_threshold: 0.01
@@ -18,7 +18,7 @@ preprocessing:
 
     remove_transition_outliers_cos_angle_threshold: 0.9996 #0.996195 # cos(5 degrees) = 0.996195
 
-    normalize_intensities_reference_range: 0.0 # if this is zero the processing of this is off
+    normalize_intensities_reference_range: 0.0 # if this is negtive the processing of this is off else if this is 0.0 the range of the point is not used only the incidence angle
     calculate_point_curvature_kernel_width: 0 # 1
     calculate_point_plateau_kernel_width: 0 # 2
 

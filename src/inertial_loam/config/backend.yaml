@@ -1,6 +1,6 @@
 backend:
   ros__parameters:
-    global_map_ds_leafsize: 0.01 # in meters
+    global_map_ds_leafsize: 0.2 # in meters
     global_map_update_rate: 5.0 # in seconds
     odometry_topic: "/odom"
     cloud_topic: "/full_point_cloud_odom"
