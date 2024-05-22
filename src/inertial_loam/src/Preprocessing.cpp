@@ -693,24 +693,29 @@ public:
             normal_vector = getSurfaceNormal(cloud_in.points[i]);
             range_vector = - getNormalizedPositionVector(cloud_in.points[i]);
             // double cos_incidence_angle = abs(range_vector.transpose() * normal_vector);
-            double cos_incidence_angle = range_vector.dot(normal_vector);
+            double cos_incidence_angle = range_vector.dot(normal_vector); // both are unit vector therefore this should be the cosine of the angle between
             double intensity = (double)floor(cloud_in.points[i].intensity);
-            double timestamp = (double)cloud_in.points[i].intensity - intensity;
+            double timestamp = (double)cloud_in.points[i].intensity - intensity; // save the timestamp of the point
             // intensity_normalized = intensity * (range / range_reference) * (range / range_reference) * (1.0 / cos_incidence_angle);
             // intensity_normalized = intensity * pow((range / range_reference), 2.3) * (1.0 / cos_incidence_angle);
             // intensity_normalized = intensity * pow((range / range_reference), 0.5) * pow(cos_incidence_angle, -0.3);
-            intensity_normalized = intensity * pow(cos_incidence_angle, -0.3);
+            
+            if (range_reference > 0.0)  {
+                intensity_normalized = intensity * pow((range / range_reference), 0.5) *  pow(cos_incidence_angle, -0.3);
+            } else if (range_reference == 0.0){
+                intensity_normalized = intensity * pow(cos_incidence_angle, -0.3);
+            }
             
             // intensity_normalized = intensity * (range / range_reference) * (1.0 / cos_incidence_angle);
             // intensity_normalized = intensity * (1.0 / cos_incidence_angle);
 
-            if (intensity_normalized > filter_max_intensity_)
-            {
-                intensity_normalized = filter_max_intensity_;
-            }
+            // if (intensity_normalized > filter_max_intensity_)
+            // {
+            //     intensity_normalized = filter_max_intensity_;
+            // }
             
             intensity_normalized = round(intensity_normalized);
-            cloud_out.points[i].intensity = intensity_normalized + timestamp;
+            cloud_out.points[i].intensity = intensity_normalized + timestamp; // re add the timestamp with the new intensity value
 
             // if (intensity_normalized > max_intesity) {
             //     max_intesity = intensity_normalized;
@@ -820,7 +825,7 @@ public:
 
 
 
-        if (abs(new_dt - mean_dt) > 2.5*std_dt){
+        if (abs(new_dt - mean_dt) > 10*std_dt){
             RCLCPP_WARN(get_logger(), "Bad scan dt detected!! %f,  using mean instead %f. Std is: %f", new_dt, mean_dt, std_dt );
             return mean_dt;
         }
@@ -855,7 +860,9 @@ public:
 
             if (cloud_queue.size() > 5)
             {
-                RCLCPP_WARN(get_logger(), "Warning: preprocessing buffer size is: %i, previous frame process time was: %fs", cloud_queue.size(), frame_procces_time);
+                std::string msg = "Warning: preprocessing buffer size is:" + std::to_string(cloud_queue.size()) +", previous frame process time was: " + std::to_string(frame_procces_time*1000) + "ms";
+                RCLCPP_WARN_THROTTLE(get_logger(),* get_clock(), 2000, msg);
+                // RCLCPP_WARN(get_logger(), "Warning: preprocessing buffer size is: %i, previous frame process time was: %fms", cloud_queue.size(), frame_procces_time*1000);
                 // RCLCPP_WARN(get_logger(), "Buffer size is: %i", cloud_queue.size());
             }
         }
@@ -991,17 +998,19 @@ public:
 
 int main(int argc, char **argv)
 {
-    // rclcpp::init(argc, argv);
-    // auto processing_node = std::make_shared<Preprocessing>();
-    // rclcpp::executors::MultiThreadedExecutor executor;
-    // executor.add_node(processing_node);
-
-    // executor.spin();
-    // rclcpp::shutdown();
-    // return 0;
-
+    // --- multi process --- 
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<Preprocessing>());
+    auto processing_node = std::make_shared<Preprocessing>();
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(processing_node);
+
+    executor.spin();
     rclcpp::shutdown();
     return 0;
+
+    // --- single process --- 
+    // rclcpp::init(argc, argv);
+    // rclcpp::spin(std::make_shared<Preprocessing>());
+    // rclcpp::shutdown();
+    // return 0;
 }
