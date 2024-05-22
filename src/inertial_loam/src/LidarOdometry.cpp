@@ -463,7 +463,7 @@ void INS::preintegrateIMU(const double last_scan_start_time, const double next_s
     double integration_delta = next_scan_end_time - last_scan_start_time;
 
     cout << "FROM INS: Integration delta: " << integration_delta << ", start: " << to_string(last_scan_start_time) << " end: " << to_string(next_scan_end_time) << "\n";
-    double integration_time = 0.0;
+    // double integration_time = 0.0;
     // clear out buffer up till the first imu msg before the scan begins, the anchor state should be just before the start of the scan
     double imu_msg_dt{};
     double imu_dt{};
@@ -532,8 +532,8 @@ void INS::preintegrateIMU(const double last_scan_start_time, const double next_s
     // integrate all the collected imu msg in the integration delta time
     for (size_t i = 0; i < preintegrate_buffer.size(); i++) {
         IMUwrench imu_input = preintegrate_buffer[i];
-        double msg_time = imu_input.time;
-        // imu_dt = validateIMUdt(imu_input.dt);
+        // double msg_time = imu_input.time;
+        // imu_dt = validateIMUdt(imu_input.dt); // this doesnt work 
         imu_dt = imu_input.dt;
 
         integrateImuStep(imu_input.acc, imu_input.ang, imu_dt); // this writes to preint_state, but does not calc jerk and alpha
@@ -576,14 +576,14 @@ void INS::preintegrateIMU(const double last_scan_start_time, const double next_s
         // // preint_state = new_preint_state;
         // // this_preint_state = new_preint_state;
 
-        integration_time += imu_dt;
+        // integration_time += imu_dt;
 
-        Eigen::Quaterniond rotation = preint_state.ori.inverse() * preint_anchor.ori; 
-        Eigen::Vector3d translation = preint_state.pos - preint_anchor.pos;
+        // Eigen::Quaterniond rotation = preint_state.ori.inverse() * preint_anchor.ori; 
+        // Eigen::Vector3d translation = preint_state.pos - preint_anchor.pos;
 
-        // double preint_norm = translation.norm();
-        Eigen::AngleAxisd angleAxis = Eigen::AngleAxisd(rotation);
-        double preint_angle = angleAxis.angle()*180.0/M_PI;
+        // // double preint_norm = translation.norm();
+        // Eigen::AngleAxisd angleAxis = Eigen::AngleAxisd(rotation);
+        // double preint_angle = angleAxis.angle()*180.0/M_PI;
 
         // cout << "idx: "<< i << " timestamp: " << to_string(msg_time) << " msg dt: "<< imu_input.dt << " dt: " << imu_dt << "\n";
         // cout << "acc: " << imu_input.acc.transpose() << " ang:  " << imu_input.ang.transpose() << "\n";
@@ -764,9 +764,9 @@ void INS::undistortCloud(const pcl::PointCloud<PointType> &cloud_in, pcl::PointC
     // INSstate stateX;
     INSstate stateX;
     INSstate state_next;
-    Eigen::Matrix4d T_star = Eigen::Matrix4d::Identity();
+    // Eigen::Matrix4d T_star = Eigen::Matrix4d::Identity();
     // double point_state_dt;
-    #pragma omp parallel for reduction(+:sub_calc_time) reduction(+:full_calc_time) private(stateX, state_next, T_star) shared(state_sync_index, point_frame_dts) num_threads(6)
+    #pragma omp parallel for reduction(+:sub_calc_time) reduction(+:full_calc_time) private(stateX, state_next) shared(state_sync_index, point_frame_dts) num_threads(8)
     // #pragma omp parallel for private(stateX, state_next) shared(state_sync_index, point_frame_dts) num_threads(8)
     for (size_t k = 0; k < cloud_size; k++){
         auto v1 = std::chrono::high_resolution_clock::now();
@@ -792,11 +792,12 @@ void INS::undistortCloud(const pcl::PointCloud<PointType> &cloud_in, pcl::PointC
             point_state_dt = +0.0;
         }
 
-        // if (!pcl::isFinite(point))
-        // {
+        if (!pcl::isFinite(point))
+        {
             // RCLCPP_INFO_ONCE(get_logger(), "point NAN! before undistortion");
-            // cout << "point NAN! before undistortion" << "\n";
-        // 
+            cout << "point NAN! before undistortion" << "\n";
+        }
+
         auto t1 = std::chrono::high_resolution_clock::now();
         INSstate point_undistort_state = calcKinematicInterpolatedState(stateX, state_next, point_state_dt); // returns the interpolated kinematic state at the point time
         
@@ -2282,375 +2283,375 @@ class LidarOdometry : public rclcpp::Node
             }
         }
 
-        void calcState0()
-        {
+        // void calcState0()
+        // {
             
-            // double sub_calc_time = 0.0;
-            // double undistort_time = 0.0;
+        //     // double sub_calc_time = 0.0;
+        //     // double undistort_time = 0.0;
 
-            double frame_start_time = current_scan_time;
+        //     double frame_start_time = current_scan_time;
 
-            // get the latest integrated state just before the start of the new cloud scan
-            size_t i = 0;
-            RCLCPP_INFO(get_logger(),"frame start time %f", frame_start_time);
-            while (preint_states[i+1].time < frame_start_time) // comparing to i+1 to get the state just before frame_start
-            {
-                publishINS(preint_states[i]);
-                preint_states.pop_front();
-                // RCLCPP_INFO(get_logger(), "sync state%i ori %f %f %f %f",i,preint_states[i].ori.w(), preint_states[i].ori.x(), preint_states[i].ori.y(), preint_states[i].ori.z() );
-                // i++;
-                // RCLCPP_INFO(get_logger(), "undistort sync i %i",i );
-            }
-            // int i_base = i;
-            // RCLCPP_INFO(get_logger(), "final sync state%i ori %f %f %f %f",i,preint_states[i].ori.w(), preint_states[i].ori.x(), preint_states[i].ori.y(), preint_states[i].ori.z() );
-            // RCLCPP_INFO(get_logger(), "undistort sync final i %i",i );
+        //     // get the latest integrated state just before the start of the new cloud scan
+        //     size_t i = 0;
+        //     RCLCPP_INFO(get_logger(),"frame start time %f", frame_start_time);
+        //     while (preint_states[i+1].time < frame_start_time) // comparing to i+1 to get the state just before frame_start
+        //     {
+        //         publishINS(preint_states[i]);
+        //         preint_states.pop_front();
+        //         // RCLCPP_INFO(get_logger(), "sync state%i ori %f %f %f %f",i,preint_states[i].ori.w(), preint_states[i].ori.x(), preint_states[i].ori.y(), preint_states[i].ori.z() );
+        //         // i++;
+        //         // RCLCPP_INFO(get_logger(), "undistort sync i %i",i );
+        //     }
+        //     // int i_base = i;
+        //     // RCLCPP_INFO(get_logger(), "final sync state%i ori %f %f %f %f",i,preint_states[i].ori.w(), preint_states[i].ori.x(), preint_states[i].ori.y(), preint_states[i].ori.z() );
+        //     // RCLCPP_INFO(get_logger(), "undistort sync final i %i",i );
 
-            // preint_state.vel = preint_states[i].vel; // the initial velocity of the next preintegration sweep
-            // set state anchor for next preintegration - this is synced with imu steps
-            setPreintAnchor(preint_states[i]);
+        //     // preint_state.vel = preint_states[i].vel; // the initial velocity of the next preintegration sweep
+        //     // set state anchor for next preintegration - this is synced with imu steps
+        //     setPreintAnchor(preint_states[i]);
 
-            // calculates state0, the syncronised interpolated state at time of the start of the cloud
-            double sync_time = frame_start_time - preint_states[i].time;
-            // double imu_dt = preint_states[i+1].time - preint_states[i].time;
-            double imu_dt = preint_states[i].dt;
+        //     // calculates state0, the syncronised interpolated state at time of the start of the cloud
+        //     double sync_time = frame_start_time - preint_states[i].time;
+        //     // double imu_dt = preint_states[i+1].time - preint_states[i].time;
+        //     double imu_dt = preint_states[i].dt;
 
-            RCLCPP_INFO(get_logger(), "state0  dt %f", imu_dt );
-            RCLCPP_INFO(get_logger(), "state0 sync time %f", sync_time );
-            // Eigen::Vector3d jerk = 1.0 / sync_time * (preint_states[i+1].ori.matrix() * preint_states[i+1].acc  - preint_states[i].ori.matrix() * preint_states[i].acc);
-            // Eigen::Vector3d alpha = 1.0 / sync_time * (preint_states[i+1].ang - preint_states[i].ang);
-            Eigen::Vector3d jerk = (preint_states[i+1].jerk + preint_states[i].jerk) * sync_time/imu_dt ; // interpolated jerk and alpha, interpolated from the sync_time to imu_dt, above is wrong
-            Eigen::Vector3d alpha = (preint_states[i+1].alpha + preint_states[i].alpha) * sync_time/imu_dt ;
-            // Eigen::Vector3d jerk = Eigen::Vector3d::Zero(); //preint_states[i].jerk; THIS CAUSE ALOT OF ERROR IN UNDISTORT IF NOT ZERO?!
-            // Eigen::Vector3d alpha = Eigen::Vector3d::Zero();//preint_states[i].alpha;
-            state0.pos = preint_states[i].pos + preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
-            state0.vel = preint_states[i].vel + (preint_states[i].ori.matrix() *preint_states[i].acc) *sync_time;
-            state0.acc = preint_states[i].acc + jerk * sync_time;
-            state0.ang = preint_states[i].ang + alpha * sync_time;
-            state0.ori =  deltaQ(0.5 * alpha * sync_time*sync_time) * (deltaQ(preint_states[i].ang * sync_time) * preint_states[i].ori).normalized();
-            state0.jerk = jerk;
-            state0.alpha = alpha;
-            // state0.time = preint_states[i].time + sync_time; // current_scan_time
-            state0.time =  current_scan_time;
-            state0.dt =  imu_dt;
+        //     RCLCPP_INFO(get_logger(), "state0  dt %f", imu_dt );
+        //     RCLCPP_INFO(get_logger(), "state0 sync time %f", sync_time );
+        //     // Eigen::Vector3d jerk = 1.0 / sync_time * (preint_states[i+1].ori.matrix() * preint_states[i+1].acc  - preint_states[i].ori.matrix() * preint_states[i].acc);
+        //     // Eigen::Vector3d alpha = 1.0 / sync_time * (preint_states[i+1].ang - preint_states[i].ang);
+        //     Eigen::Vector3d jerk = (preint_states[i+1].jerk + preint_states[i].jerk) * sync_time/imu_dt ; // interpolated jerk and alpha, interpolated from the sync_time to imu_dt, above is wrong
+        //     Eigen::Vector3d alpha = (preint_states[i+1].alpha + preint_states[i].alpha) * sync_time/imu_dt ;
+        //     // Eigen::Vector3d jerk = Eigen::Vector3d::Zero(); //preint_states[i].jerk; THIS CAUSE ALOT OF ERROR IN UNDISTORT IF NOT ZERO?!
+        //     // Eigen::Vector3d alpha = Eigen::Vector3d::Zero();//preint_states[i].alpha;
+        //     state0.pos = preint_states[i].pos + preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
+        //     state0.vel = preint_states[i].vel + (preint_states[i].ori.matrix() *preint_states[i].acc) *sync_time;
+        //     state0.acc = preint_states[i].acc + jerk * sync_time;
+        //     state0.ang = preint_states[i].ang + alpha * sync_time;
+        //     state0.ori =  deltaQ(0.5 * alpha * sync_time*sync_time) * (deltaQ(preint_states[i].ang * sync_time) * preint_states[i].ori).normalized();
+        //     state0.jerk = jerk;
+        //     state0.alpha = alpha;
+        //     // state0.time = preint_states[i].time + sync_time; // current_scan_time
+        //     state0.time =  current_scan_time;
+        //     state0.dt =  imu_dt;
 
-            // printINSstate(state0);
+        //     // printINSstate(state0);
             
             
 
-            // RCLCPP_INFO(get_logger(), "Set Anchor: pos %f %f %f vel %f %f %f", preint_anchor.pos.x(), preint_anchor.pos.y(), preint_anchor.pos.z(), preint_anchor.vel.x(),preint_anchor.vel.y(), preint_anchor.vel.z());
-            // RCLCPP_INFO(get_logger(), "Set Anchor: ori %f %f %f %f", preint_anchor.ori.w(), preint_anchor.ori.x(), preint_anchor.ori.y(), preint_anchor.ori.z());
+        //     // RCLCPP_INFO(get_logger(), "Set Anchor: pos %f %f %f vel %f %f %f", preint_anchor.pos.x(), preint_anchor.pos.y(), preint_anchor.pos.z(), preint_anchor.vel.x(),preint_anchor.vel.y(), preint_anchor.vel.z());
+        //     // RCLCPP_INFO(get_logger(), "Set Anchor: ori %f %f %f %f", preint_anchor.ori.w(), preint_anchor.ori.x(), preint_anchor.ori.y(), preint_anchor.ori.z());
 
-            // preint_anchor = state0;
+        //     // preint_anchor = state0;
 
-            // this state0 is also the prior for the scan registration !!
-            // it is saved so it can be removed from the cloud again to match the cloud with the odometry position
-            preint_transformation_guess.translation = state0.pos;
-            preint_transformation_guess.rotation = state0.ori;
-
-
-            RCLCPP_INFO(get_logger(), "state0 pose: pos %f %f %f ", preint_transformation_guess.translation.x(), preint_transformation_guess.translation.y(), preint_transformation_guess.translation.z());
-            RCLCPP_INFO(get_logger(), "state0 pose: ori %f %f %f %f", preint_transformation_guess.rotation.w(), preint_transformation_guess.rotation.x(), preint_transformation_guess.rotation.y(), preint_transformation_guess.rotation.z());
+        //     // this state0 is also the prior for the scan registration !!
+        //     // it is saved so it can be removed from the cloud again to match the cloud with the odometry position
+        //     preint_transformation_guess.translation = state0.pos;
+        //     preint_transformation_guess.rotation = state0.ori;
 
 
-        }
-
-        void undistortCloud(const pcl::PointCloud<PointType> &cloud_in, pcl::PointCloud<PointType> &cloud_out)
-        {   
-
-            calcState0(); // syncs states to lidar frame
-            rclcpp::Clock system_clock;
-            rclcpp::Time time_undistort_start = system_clock.now();
-
-            double sub_calc_time = 0.0;
-            double undistort_time = 0.0;
-
-            // create state sync look-up index
-            int *state_sync_index = new int[cloud_in.points.size()];
-            // double point_frame_dts[cloud_in.points.size()];
-            double *point_frame_dts = new double[cloud_in.points.size()];
-            #pragma omp parallel for shared(state_sync_index, point_frame_dts)
-            for (size_t k = 0; k < cloud_in.points.size(); k++){
-                int i = 0;
-                PointType point = cloud_in.points[k];
-                double intensity = point.intensity;
-                double point_frame_dt = intensity - (int)intensity;
-                while ((point_frame_dt + current_scan_time) >= preint_states[i+1].time){
-                    i++;
-                    // RCLCPP_INFO(get_logger(),"state sync index %i to point index k %i", i, k); 
-                }
-                state_sync_index[k] = i;
-                point_frame_dts[k] = point_frame_dt ;
-            }
+        //     RCLCPP_INFO(get_logger(), "state0 pose: pos %f %f %f ", preint_transformation_guess.translation.x(), preint_transformation_guess.translation.y(), preint_transformation_guess.translation.z());
+        //     RCLCPP_INFO(get_logger(), "state0 pose: ori %f %f %f %f", preint_transformation_guess.rotation.w(), preint_transformation_guess.rotation.x(), preint_transformation_guess.rotation.y(), preint_transformation_guess.rotation.z());
 
 
-            // INSstate stateX;
-            INSstate stateX;
-            // double point_state_dt;
-            #pragma omp parallel for reduction(+:sub_calc_time) private(stateX) shared(state_sync_index, point_frame_dts) num_threads(8)
-            for (size_t k = 0; k < cloud_in.points.size(); k++){
-                rclcpp::Time time_calc_start = system_clock.now();
-                PointType point = cloud_in.points[k];
-                int i = state_sync_index[k];
-                double point_frame_dt = point_frame_dts[k];
+        // }
 
-                // validate that sync_time and state is correct
-                // get next imu preintegration state when state gets too old
-                // if ((point_frame_dt + current_scan_time) >= preint_states[i+1].time && preint_states.size() >= i+2){
-                    // while ((point_frame_dt + current_scan_time) >= preint_states[i+1].time && preint_states.size() >= i+2){
-                    //     i++;
-                    //     // RCLCPP_INFO(get_logger(),"next undistort state! %i", i);
-                    // }
-                    // publishINS(preint_states[i]);
+        // void undistortCloud(const pcl::PointCloud<PointType> &cloud_in, pcl::PointCloud<PointType> &cloud_out)
+        // {   
 
-                    // set new stateX..
-                    // double state_dt = preint_states[i+1].time - preint_states[i].time;
-                    // Eigen::Vector3d jerk = 1.0 / state_dt * (preint_states[i+1].ori * preint_states[i+1].acc - preint_states[i].ori * preint_states[i].acc);
-                    // Eigen::Vector3d alpha = 1.0 / state_dt * (preint_states[i+1].ang - preint_states[i].ang);
-                    // stateX.pos      = preint_states[i].pos; //+ preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
-                    // stateX.vel      = preint_states[i].vel; //+ (preint_states[i].ori *preint_states[i].acc) *sync_time;
-                    // stateX.acc      = preint_states[i].acc; //+ jerk *sync_time;
-                    // stateX.ori      = preint_states[i].ori; //* deltaQ(preint_states[i].ang * sync_time) * deltaQ(0.5 * alpha * sync_time*sync_time);
-                    // stateX.jerk     = preint_states[i].jerk; //
-                    // stateX.alpha    = preint_states[i].alpha; //
-                    // double sync_time = stateX.time - current_scan_time;
-                    double sync_time = 0.0; // sync_time should be negative, time between scan start and preceding imu measurement
-                    if (i == 0) {
-                        // RCLCPP_INFO(get_logger(), "i == 0, k = %i", k);
-                        stateX = state0;
-                    } else {
-                        stateX = preint_states[i];
-                        sync_time = current_scan_time - stateX.time ;
-                    }
+        //     calcState0(); // syncs states to lidar frame
+        //     rclcpp::Clock system_clock;
+        //     rclcpp::Time time_undistort_start = system_clock.now();
+
+        //     double sub_calc_time = 0.0;
+        //     double undistort_time = 0.0;
+
+        //     // create state sync look-up index
+        //     int *state_sync_index = new int[cloud_in.points.size()];
+        //     // double point_frame_dts[cloud_in.points.size()];
+        //     double *point_frame_dts = new double[cloud_in.points.size()];
+        //     #pragma omp parallel for shared(state_sync_index, point_frame_dts)
+        //     for (size_t k = 0; k < cloud_in.points.size(); k++){
+        //         int i = 0;
+        //         PointType point = cloud_in.points[k];
+        //         double intensity = point.intensity;
+        //         double point_frame_dt = intensity - (int)intensity;
+        //         while ((point_frame_dt + current_scan_time) >= preint_states[i+1].time){
+        //             i++;
+        //             // RCLCPP_INFO(get_logger(),"state sync index %i to point index k %i", i, k); 
+        //         }
+        //         state_sync_index[k] = i;
+        //         point_frame_dts[k] = point_frame_dt ;
+        //     }
 
 
-                    // if (state_dt > 1.0 || state_dt < 0.0){
-                    //     RCLCPP_INFO(get_logger(), "bad state_dt! %f = %f - %f ", state_dt, preint_states[i+1].time,  preint_states[i].time);
-                    //     state_dt = 0.01;
-                    //     RCLCPP_INFO(get_logger(), "bad state undistort state%i dt %f pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i-1,state_dt, stateX.pos.x(), stateX.pos.y(), stateX.pos.z(), stateX.vel.x(), stateX.vel.y(), stateX.vel.z(), stateX.acc.x(), stateX.acc.y(), stateX.acc.z() , jerk.x(), jerk.y(), jerk.z() );
-                    // }
+        //     // INSstate stateX;
+        //     INSstate stateX;
+        //     // double point_state_dt;
+        //     #pragma omp parallel for reduction(+:sub_calc_time) private(stateX) shared(state_sync_index, point_frame_dts) num_threads(8)
+        //     for (size_t k = 0; k < cloud_in.points.size(); k++){
+        //         rclcpp::Time time_calc_start = system_clock.now();
+        //         PointType point = cloud_in.points[k];
+        //         int i = state_sync_index[k];
+        //         double point_frame_dt = point_frame_dts[k];
+
+        //         // validate that sync_time and state is correct
+        //         // get next imu preintegration state when state gets too old
+        //         // if ((point_frame_dt + current_scan_time) >= preint_states[i+1].time && preint_states.size() >= i+2){
+        //             // while ((point_frame_dt + current_scan_time) >= preint_states[i+1].time && preint_states.size() >= i+2){
+        //             //     i++;
+        //             //     // RCLCPP_INFO(get_logger(),"next undistort state! %i", i);
+        //             // }
+        //             // publishINS(preint_states[i]);
+
+        //             // set new stateX..
+        //             // double state_dt = preint_states[i+1].time - preint_states[i].time;
+        //             // Eigen::Vector3d jerk = 1.0 / state_dt * (preint_states[i+1].ori * preint_states[i+1].acc - preint_states[i].ori * preint_states[i].acc);
+        //             // Eigen::Vector3d alpha = 1.0 / state_dt * (preint_states[i+1].ang - preint_states[i].ang);
+        //             // stateX.pos      = preint_states[i].pos; //+ preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
+        //             // stateX.vel      = preint_states[i].vel; //+ (preint_states[i].ori *preint_states[i].acc) *sync_time;
+        //             // stateX.acc      = preint_states[i].acc; //+ jerk *sync_time;
+        //             // stateX.ori      = preint_states[i].ori; //* deltaQ(preint_states[i].ang * sync_time) * deltaQ(0.5 * alpha * sync_time*sync_time);
+        //             // stateX.jerk     = preint_states[i].jerk; //
+        //             // stateX.alpha    = preint_states[i].alpha; //
+        //             // double sync_time = stateX.time - current_scan_time;
+        //             double sync_time = 0.0; // sync_time should be negative, time between scan start and preceding imu measurement
+        //             if (i == 0) {
+        //                 // RCLCPP_INFO(get_logger(), "i == 0, k = %i", k);
+        //                 stateX = state0;
+        //             } else {
+        //                 stateX = preint_states[i];
+        //                 sync_time = current_scan_time - stateX.time ;
+        //             }
+
+
+        //             // if (state_dt > 1.0 || state_dt < 0.0){
+        //             //     RCLCPP_INFO(get_logger(), "bad state_dt! %f = %f - %f ", state_dt, preint_states[i+1].time,  preint_states[i].time);
+        //             //     state_dt = 0.01;
+        //             //     RCLCPP_INFO(get_logger(), "bad state undistort state%i dt %f pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i-1,state_dt, stateX.pos.x(), stateX.pos.y(), stateX.pos.z(), stateX.vel.x(), stateX.vel.y(), stateX.vel.z(), stateX.acc.x(), stateX.acc.y(), stateX.acc.z() , jerk.x(), jerk.y(), jerk.z() );
+        //             // }
                     
                     
-                    // RCLCPP_INFO(get_logger(), "undistort state%i pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i, stateX.pos.x(), stateX.pos.y(), stateX.pos.z(), stateX.vel.x(), stateX.vel.y(), stateX.vel.z(), stateX.acc.x(), stateX.acc.y(), stateX.acc.z() , jerk.x(), jerk.y(), jerk.z() );
-                    // RCLCPP_INFO(get_logger(), "undistort state%i ori %f %f %f %f",i,stateX.ori.w(), stateX.ori.x(), stateX.ori.y(), stateX.ori.z() );
+        //             // RCLCPP_INFO(get_logger(), "undistort state%i pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i, stateX.pos.x(), stateX.pos.y(), stateX.pos.z(), stateX.vel.x(), stateX.vel.y(), stateX.vel.z(), stateX.acc.x(), stateX.acc.y(), stateX.acc.z() , jerk.x(), jerk.y(), jerk.z() );
+        //             // RCLCPP_INFO(get_logger(), "undistort state%i ori %f %f %f %f",i,stateX.ori.w(), stateX.ori.x(), stateX.ori.y(), stateX.ori.z() );
 
-                    // RCLCPP_INFO(get_logger(), "undistort state_dt %f", );
-                // }
+        //             // RCLCPP_INFO(get_logger(), "undistort state_dt %f", );
+        //         // }
 
-                double point_state_dt = point_frame_dt + sync_time; 
-                if (point_state_dt < 0.0){  // error detection..
-                    RCLCPP_WARN(get_logger(), "Negative point dt detected state dt %f, frame dt %f, sync time %f, index %i", point_state_dt, point_frame_dt, sync_time, k);
-                    point_state_dt = +0.0;
-                }
+        //         double point_state_dt = point_frame_dt + sync_time; 
+        //         if (point_state_dt < 0.0){  // error detection..
+        //             RCLCPP_WARN(get_logger(), "Negative point dt detected state dt %f, frame dt %f, sync time %f, index %i", point_state_dt, point_frame_dt, sync_time, k);
+        //             point_state_dt = +0.0;
+        //         }
 
-                // calculate point specific transform..
-                Eigen::Vector3d point_translation_distortion = stateX.pos + stateX.vel * point_state_dt +  (stateX.ori.matrix() * (stateX.acc * 0.5*point_state_dt*point_state_dt)) + 1.0/6.0 * stateX.jerk *point_state_dt*point_state_dt*point_state_dt;
+        //         // calculate point specific transform..
+        //         Eigen::Vector3d point_translation_distortion = stateX.pos + stateX.vel * point_state_dt +  (stateX.ori.matrix() * (stateX.acc * 0.5*point_state_dt*point_state_dt)) + 1.0/6.0 * stateX.jerk *point_state_dt*point_state_dt*point_state_dt;
                 
-                // Eigen::Quaterniond dq_vel = deltaQ(stateX.ang); 
-                // dq_vel = multQuatByScalar(dq_vel, point_state_dt);
-                // // Eigen::Quaterniond dq_rate = deltaQ(stateX.alpha); 
-                // // dq_rate = multQuatByScalar(dq_rate, 0.5*point_state_dt*point_state_dt);
-                // Eigen::Quaterniond dq_rate = Eigen::Quaterniond::Identity();
-                // Eigen::Quaterniond dq = addQuaternions(stateX.ori*dq_vel, stateX.ori*dq_rate);
-                // Eigen::Quaterniond point_rotation_distortion = addQuaternions(dq, stateX.ori); 
-                // point_rotation_distortion.normalize();// save new orientation normalized!
+        //         // Eigen::Quaterniond dq_vel = deltaQ(stateX.ang); 
+        //         // dq_vel = multQuatByScalar(dq_vel, point_state_dt);
+        //         // // Eigen::Quaterniond dq_rate = deltaQ(stateX.alpha); 
+        //         // // dq_rate = multQuatByScalar(dq_rate, 0.5*point_state_dt*point_state_dt);
+        //         // Eigen::Quaterniond dq_rate = Eigen::Quaterniond::Identity();
+        //         // Eigen::Quaterniond dq = addQuaternions(stateX.ori*dq_vel, stateX.ori*dq_rate);
+        //         // Eigen::Quaterniond point_rotation_distortion = addQuaternions(dq, stateX.ori); 
+        //         // point_rotation_distortion.normalize();// save new orientation normalized!
 
-                // Eigen::Quaterniond point_rotation_distortion_alpha = deltaQ(stateX.alpha);
-                // point_rotation_distortion_alpha = multQuatByScalar(point_rotation_distortion_alpha, 0.5 * point_state_dt*point_state_dt);
-                // Eigen::Quaterniond point_rotation_distortion_rate = deltaQ(stateX.ang);
-                // point_rotation_distortion_rate = multQuatByScalar(point_rotation_distortion_rate, point_state_dt);
+        //         // Eigen::Quaterniond point_rotation_distortion_alpha = deltaQ(stateX.alpha);
+        //         // point_rotation_distortion_alpha = multQuatByScalar(point_rotation_distortion_alpha, 0.5 * point_state_dt*point_state_dt);
+        //         // Eigen::Quaterniond point_rotation_distortion_rate = deltaQ(stateX.ang);
+        //         // point_rotation_distortion_rate = multQuatByScalar(point_rotation_distortion_rate, point_state_dt);
 
-                Eigen::Quaterniond point_rotation_distortion_alpha = deltaQ(stateX.alpha *0.5 * point_state_dt*point_state_dt);
-                Eigen::Quaterniond point_rotation_distortion_rate = deltaQ(stateX.ang*point_state_dt);
+        //         Eigen::Quaterniond point_rotation_distortion_alpha = deltaQ(stateX.alpha *0.5 * point_state_dt*point_state_dt);
+        //         Eigen::Quaterniond point_rotation_distortion_rate = deltaQ(stateX.ang*point_state_dt);
                 
-                // if (!point_rotation_distortion_rate.matrix().allFinite()){
-                //     RCLCPP_WARN(get_logger(), "Nan Quaternion detected!");
-                //     point_rotation_distortion_rate = Eigen::Quaterniond::Identity();
-                // }
+        //         // if (!point_rotation_distortion_rate.matrix().allFinite()){
+        //         //     RCLCPP_WARN(get_logger(), "Nan Quaternion detected!");
+        //         //     point_rotation_distortion_rate = Eigen::Quaterniond::Identity();
+        //         // }
 
-                // Eigen::Quaterniond point_rotation_distortion = (deltaQ(0.5 * stateX.alpha * point_state_dt*point_state_dt) * deltaQ(stateX.ang * point_state_dt) * stateX.ori).normalized();
-                // Eigen::Quaterniond point_rotation_distortion = addQuaternions(point_rotation_distortion_alpha, point_rotation_distortion_rate) * stateX.ori;
-                Eigen::Quaterniond point_rotation_distortion = (point_rotation_distortion_alpha * point_rotation_distortion_rate) * stateX.ori;
-                point_rotation_distortion.normalize();
-
-
-                Eigen::Matrix4d T_star = Eigen::Matrix4d::Identity();
-                // Eigen::Matrix4d T_star_normal = Eigen::Matrix4d::Identity();
-                T_star.block<3,3>(0,0) = point_rotation_distortion.matrix();
-                // T_star_normal.block<3,3>(0,0) = Eigen::Matrix3d(point_rotation_distortion);
-                T_star.block<3,1>(0,3) = point_translation_distortion;
+        //         // Eigen::Quaterniond point_rotation_distortion = (deltaQ(0.5 * stateX.alpha * point_state_dt*point_state_dt) * deltaQ(stateX.ang * point_state_dt) * stateX.ori).normalized();
+        //         // Eigen::Quaterniond point_rotation_distortion = addQuaternions(point_rotation_distortion_alpha, point_rotation_distortion_rate) * stateX.ori;
+        //         Eigen::Quaterniond point_rotation_distortion = (point_rotation_distortion_alpha * point_rotation_distortion_rate) * stateX.ori;
+        //         point_rotation_distortion.normalize();
 
 
-                // if (!pcl::isFinite(*point))
-                if (!pcl::isFinite(point))
-                {
-                    RCLCPP_INFO_ONCE(get_logger(), "point NAN! before undistortion");
-                }
-                // apply transformation to point
-                // Eigen::Vector3d point_vector(point.x, point.y, point.z);
-                // point_vector = point_rotation_distortion * point_vector + point_translation_distortion;
+        //         Eigen::Matrix4d T_star = Eigen::Matrix4d::Identity();
+        //         // Eigen::Matrix4d T_star_normal = Eigen::Matrix4d::Identity();
+        //         T_star.block<3,3>(0,0) = point_rotation_distortion.matrix();
+        //         // T_star_normal.block<3,3>(0,0) = Eigen::Matrix3d(point_rotation_distortion);
+        //         T_star.block<3,1>(0,3) = point_translation_distortion;
 
-                Eigen::Vector4d point_vector(point.x, point.y, point.z, 1.0);
-                // Eigen::Vector3d point_normal_vector(point.normal_x, point.normal_y, point.normal_z, 1.0);
-                point_vector = T_star*point_vector;
-                // point_normal_vector = T_star.block<3,3>(0,0)*point_normal_vector;
 
-                point.x = point_vector.x();
-                point.y = point_vector.y();
-                point.z = point_vector.z();
+        //         // if (!pcl::isFinite(*point))
+        //         if (!pcl::isFinite(point))
+        //         {
+        //             RCLCPP_INFO_ONCE(get_logger(), "point NAN! before undistortion");
+        //         }
+        //         // apply transformation to point
+        //         // Eigen::Vector3d point_vector(point.x, point.y, point.z);
+        //         // point_vector = point_rotation_distortion * point_vector + point_translation_distortion;
 
-                // point.normal_x = point_normal_vector.x();
-                // point.normal_y = point_normal_vector.y();
-                // point.normal_z = point_normal_vector.z();
-                cloud_out.points[k] = point;
+        //         Eigen::Vector4d point_vector(point.x, point.y, point.z, 1.0);
+        //         // Eigen::Vector3d point_normal_vector(point.normal_x, point.normal_y, point.normal_z, 1.0);
+        //         point_vector = T_star*point_vector;
+        //         // point_normal_vector = T_star.block<3,3>(0,0)*point_normal_vector;
 
-                // if (!pcl::isFinite(*point))
-                if (!pcl::isFinite(point))
-                {
-                    RCLCPP_WARN_ONCE(get_logger(), "point NAN After undistortion!");
-                    RCLCPP_WARN_ONCE(get_logger(), "omp thread %i", omp_get_thread_num());
-                    RCLCPP_WARN_ONCE(get_logger(), "point number %i", k);
-                    RCLCPP_WARN_ONCE(get_logger(), "state to point dt: %f", point_state_dt);
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX time: %f", stateX.time);
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX pos: %f %f %f", stateX.pos.x(), stateX.pos.y(), stateX.pos.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX vel: %f %f %f", stateX.vel.x(), stateX.vel.y(), stateX.vel.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX acc: %f %f %f", stateX.acc.x(), stateX.acc.y(), stateX.acc.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX ang vel: %f %f %f", stateX.ang.x(), stateX.ang.y(), stateX.ang.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX jerk: %f %f %f", stateX.jerk.x(), stateX.jerk.y(), stateX.jerk.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "stateX alpha: %f %f %f", stateX.alpha.x(), stateX.alpha.y(), stateX.alpha.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "point translation: %f %f %f", point_translation_distortion.x(), point_translation_distortion.y(), point_translation_distortion.z());
-                    // RCLCPP_WARN_ONCE(get_logger(), "point rotation vel: %f %f %f %f", dq_vel.w(), dq_vel.x(), dq_vel.y(), dq_vel.z());
-                    // RCLCPP_WARN_ONCE(get_logger(), "point rotation rate: %f %f %f %f", dq_rate.w(), dq_rate.x(), dq_rate.y(), dq_rate.z());
-                    RCLCPP_WARN_ONCE(get_logger(), "point rotation: %f %f %f %f", point_rotation_distortion.w(), point_rotation_distortion.x(), point_rotation_distortion.y(), point_rotation_distortion.z());
-                    // printINSstate(stateX);
-                }
+        //         point.x = point_vector.x();
+        //         point.y = point_vector.y();
+        //         point.z = point_vector.z();
 
-                rclcpp::Time time_calc_end = system_clock.now();
-                sub_calc_time += (time_calc_end.seconds() - time_calc_start.seconds()) * 1000.0;
+        //         // point.normal_x = point_normal_vector.x();
+        //         // point.normal_y = point_normal_vector.y();
+        //         // point.normal_z = point_normal_vector.z();
+        //         cloud_out.points[k] = point;
 
-                // k++;
-            }
-            rclcpp::Time time_undistort_end = system_clock.now();
-            undistort_time = (time_undistort_end.seconds() - time_undistort_start.seconds()) * 1000.0;
+        //         // if (!pcl::isFinite(*point))
+        //         if (!pcl::isFinite(point))
+        //         {
+        //             RCLCPP_WARN_ONCE(get_logger(), "point NAN After undistortion!");
+        //             RCLCPP_WARN_ONCE(get_logger(), "omp thread %i", omp_get_thread_num());
+        //             RCLCPP_WARN_ONCE(get_logger(), "point number %i", k);
+        //             RCLCPP_WARN_ONCE(get_logger(), "state to point dt: %f", point_state_dt);
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX time: %f", stateX.time);
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX pos: %f %f %f", stateX.pos.x(), stateX.pos.y(), stateX.pos.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX vel: %f %f %f", stateX.vel.x(), stateX.vel.y(), stateX.vel.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX acc: %f %f %f", stateX.acc.x(), stateX.acc.y(), stateX.acc.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX ang vel: %f %f %f", stateX.ang.x(), stateX.ang.y(), stateX.ang.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX jerk: %f %f %f", stateX.jerk.x(), stateX.jerk.y(), stateX.jerk.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "stateX alpha: %f %f %f", stateX.alpha.x(), stateX.alpha.y(), stateX.alpha.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "point translation: %f %f %f", point_translation_distortion.x(), point_translation_distortion.y(), point_translation_distortion.z());
+        //             // RCLCPP_WARN_ONCE(get_logger(), "point rotation vel: %f %f %f %f", dq_vel.w(), dq_vel.x(), dq_vel.y(), dq_vel.z());
+        //             // RCLCPP_WARN_ONCE(get_logger(), "point rotation rate: %f %f %f %f", dq_rate.w(), dq_rate.x(), dq_rate.y(), dq_rate.z());
+        //             RCLCPP_WARN_ONCE(get_logger(), "point rotation: %f %f %f %f", point_rotation_distortion.w(), point_rotation_distortion.x(), point_rotation_distortion.y(), point_rotation_distortion.z());
+        //             // printINSstate(stateX);
+        //         }
 
-            // preint_states.pop_front(); // removes the interpolated state0 from imu states.
-            // preint_states.push_front(temp_state); // readd the nonsynced state
+        //         rclcpp::Time time_calc_end = system_clock.now();
+        //         sub_calc_time += (time_calc_end.seconds() - time_calc_start.seconds()) * 1000.0;
 
-            delete[] state_sync_index;
-            delete[] point_frame_dts;
+        //         // k++;
+        //     }
+        //     rclcpp::Time time_undistort_end = system_clock.now();
+        //     undistort_time = (time_undistort_end.seconds() - time_undistort_start.seconds()) * 1000.0;
 
-            RCLCPP_INFO(get_logger(), "---- UNDISTORTION ---- ");
-            RCLCPP_INFO(get_logger(), "Undistortion of %i points, MP cpu time: %fms, avg sub-calc time: %fms", cloud_in.points.size(), undistort_time,  sub_calc_time/(float)cloud_in.points.size() );
-            RCLCPP_INFO(get_logger(), "Total non-mp process time: %fms", sub_calc_time );
+        //     // preint_states.pop_front(); // removes the interpolated state0 from imu states.
+        //     // preint_states.push_front(temp_state); // readd the nonsynced state
+
+        //     delete[] state_sync_index;
+        //     delete[] point_frame_dts;
+
+        //     RCLCPP_INFO(get_logger(), "---- UNDISTORTION ---- ");
+        //     RCLCPP_INFO(get_logger(), "Undistortion of %i points, MP cpu time: %fms, avg sub-calc time: %fms", cloud_in.points.size(), undistort_time,  sub_calc_time/(float)cloud_in.points.size() );
+        //     RCLCPP_INFO(get_logger(), "Total non-mp process time: %fms", sub_calc_time );
         
-        }
+        // }
 
-        void undistortCloud_OLD()
-        {   
-            double frame_start_time = current_scan_time;
+        // void undistortCloud_OLD()
+        // {   
+        //     double frame_start_time = current_scan_time;
 
-            // get the latest integrated state just before the start of the new cloud scan
-            size_t i = 0;
-            while (preint_states[i+1].time < frame_start_time)
-            {
-                publishINS(preint_states[i]);
-                i++;
-                // RCLCPP_INFO(get_logger(), "undistort sync i %i",i );
-            }
-            // RCLCPP_INFO(get_logger(), "undistort sync i %i",i );
+        //     // get the latest integrated state just before the start of the new cloud scan
+        //     size_t i = 0;
+        //     while (preint_states[i+1].time < frame_start_time)
+        //     {
+        //         publishINS(preint_states[i]);
+        //         i++;
+        //         // RCLCPP_INFO(get_logger(), "undistort sync i %i",i );
+        //     }
+        //     // RCLCPP_INFO(get_logger(), "undistort sync i %i",i );
 
             
-            setPreintAnchor(preint_states[i]);
+        //     setPreintAnchor(preint_states[i]);
 
 
-            // calculate state at start of the cloud
-            double sync_time = frame_start_time - preint_states[i].time;
-            // RCLCPP_INFO(get_logger(), "undistort sync time %f", sync_time );
-            INSstate state0;
-            Eigen::Vector3d jerk = 1.0 / sync_time * (preint_states[i+1].ori.matrix() * preint_states[i+1].acc  - preint_states[i].ori.matrix() * preint_states[i].acc);
-            Eigen::Vector3d alpha = 1.0 / sync_time * (preint_states[i+1].ang - preint_states[i].ang);
-            state0.pos = preint_states[i].pos + preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
-            state0.vel = preint_states[i].vel + (preint_states[i].ori.matrix() *preint_states[i].acc) *sync_time;
-            state0.acc = preint_states[i].acc + jerk *sync_time;
-            state0.ori =  deltaQ(0.5 * alpha * sync_time*sync_time) * ( deltaQ(preint_states[i].ang * sync_time) * preint_states[i].ori).normalized();
+        //     // calculate state at start of the cloud
+        //     double sync_time = frame_start_time - preint_states[i].time;
+        //     // RCLCPP_INFO(get_logger(), "undistort sync time %f", sync_time );
+        //     INSstate state0;
+        //     Eigen::Vector3d jerk = 1.0 / sync_time * (preint_states[i+1].ori.matrix() * preint_states[i+1].acc  - preint_states[i].ori.matrix() * preint_states[i].acc);
+        //     Eigen::Vector3d alpha = 1.0 / sync_time * (preint_states[i+1].ang - preint_states[i].ang);
+        //     state0.pos = preint_states[i].pos + preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
+        //     state0.vel = preint_states[i].vel + (preint_states[i].ori.matrix() *preint_states[i].acc) *sync_time;
+        //     state0.acc = preint_states[i].acc + jerk *sync_time;
+        //     state0.ori =  deltaQ(0.5 * alpha * sync_time*sync_time) * ( deltaQ(preint_states[i].ang * sync_time) * preint_states[i].ori).normalized();
             
 
-            // RCLCPP_INFO(get_logger(), "Set Anchor: pos %f %f %f vel %f %f %f", preint_anchor.pos.x(), preint_anchor.pos.y(), preint_anchor.pos.z(), preint_anchor.vel.x(),preint_anchor.vel.y(), preint_anchor.vel.z());
-            // RCLCPP_INFO(get_logger(), "Set Anchor: ori %f %f %f %f", preint_anchor.ori.w(), preint_anchor.ori.x(), preint_anchor.ori.y(), preint_anchor.ori.z());
+        //     // RCLCPP_INFO(get_logger(), "Set Anchor: pos %f %f %f vel %f %f %f", preint_anchor.pos.x(), preint_anchor.pos.y(), preint_anchor.pos.z(), preint_anchor.vel.x(),preint_anchor.vel.y(), preint_anchor.vel.z());
+        //     // RCLCPP_INFO(get_logger(), "Set Anchor: ori %f %f %f %f", preint_anchor.ori.w(), preint_anchor.ori.x(), preint_anchor.ori.y(), preint_anchor.ori.z());
 
-            // this state0 is also the prior for the scan registration !!
-            // it is saved so it can be removed from the cloud again to match the cloud with the odometry position
-            preint_transformation_guess.translation = state0.pos;
-            preint_transformation_guess.rotation = state0.ori;
-            // preint_state.vel = state0.vel;
+        //     // this state0 is also the prior for the scan registration !!
+        //     // it is saved so it can be removed from the cloud again to match the cloud with the odometry position
+        //     preint_transformation_guess.translation = state0.pos;
+        //     preint_transformation_guess.rotation = state0.ori;
+        //     // preint_state.vel = state0.vel;
 
-            // RCLCPP_INFO(get_logger(), "undistort state0 pos %f %f %f, vel %f %f %f", state0.pos.x(), state0.pos.y(), state0.pos.z(), state0.vel.x(), state0.vel.y(), state0.vel.z()  );
+        //     // RCLCPP_INFO(get_logger(), "undistort state0 pos %f %f %f, vel %f %f %f", state0.pos.x(), state0.pos.y(), state0.pos.z(), state0.vel.x(), state0.vel.y(), state0.vel.z()  );
             
-            // get the total scan dt
-            // double scan_dt = cloud_in->points[cloud_in->points.size()-1].intensity - (int)cloud_in->points[cloud_in->points.size()-1].intensity;
-            sync_time = 0.0;
-            for (auto &point : cloud_in->points) {
-                // get point frame dt
-                double intensity = point.intensity;
-                double dt_i = intensity - (int)intensity;
-                double point_dt = dt_i + sync_time; // sync_time should be negative, time between scan an preceding imu measurement
-                if (point_dt < 0.0)
-                    point_dt = 0.0;
+        //     // get the total scan dt
+        //     // double scan_dt = cloud_in->points[cloud_in->points.size()-1].intensity - (int)cloud_in->points[cloud_in->points.size()-1].intensity;
+        //     sync_time = 0.0;
+        //     for (auto &point : cloud_in->points) {
+        //         // get point frame dt
+        //         double intensity = point.intensity;
+        //         double dt_i = intensity - (int)intensity;
+        //         double point_dt = dt_i + sync_time; // sync_time should be negative, time between scan an preceding imu measurement
+        //         if (point_dt < 0.0)
+        //             point_dt = 0.0;
 
-                // calculate point specific transform..
-                Eigen::Vector3d point_translation_distortion = state0.pos + state0.vel * point_dt + 0.5 * (state0.ori.matrix() * state0.acc) *point_dt*point_dt + 1.0/6.0 * jerk *point_dt*point_dt*point_dt;
-                Eigen::Quaterniond point_rotation_distortion = (deltaQ(0.5 * alpha * point_dt*point_dt) * deltaQ(state0.ang * point_dt) * state0.ori ).normalized();
+        //         // calculate point specific transform..
+        //         Eigen::Vector3d point_translation_distortion = state0.pos + state0.vel * point_dt + 0.5 * (state0.ori.matrix() * state0.acc) *point_dt*point_dt + 1.0/6.0 * jerk *point_dt*point_dt*point_dt;
+        //         Eigen::Quaterniond point_rotation_distortion = (deltaQ(0.5 * alpha * point_dt*point_dt) * deltaQ(state0.ang * point_dt) * state0.ori ).normalized();
 
-                Eigen::Matrix4d T_star = Eigen::Matrix4d::Identity();
-                T_star.block<3,3>(0,0) = Eigen::Matrix3d(point_rotation_distortion);
-                T_star.block<3,1>(0,3) = point_translation_distortion;
+        //         Eigen::Matrix4d T_star = Eigen::Matrix4d::Identity();
+        //         T_star.block<3,3>(0,0) = Eigen::Matrix3d(point_rotation_distortion);
+        //         T_star.block<3,1>(0,3) = point_translation_distortion;
 
 
-                if (!pcl::isFinite(point))
-                {
-                    RCLCPP_INFO_ONCE(get_logger(), "point NAN! before undistortion");
-                }
-                // apply to point
-                // Eigen::Vector3d point_vector(point.x, point.y, point.z);
-                // point_vector = point_rotation_distortion * point_vector + point_translation_distortion;
+        //         if (!pcl::isFinite(point))
+        //         {
+        //             RCLCPP_INFO_ONCE(get_logger(), "point NAN! before undistortion");
+        //         }
+        //         // apply to point
+        //         // Eigen::Vector3d point_vector(point.x, point.y, point.z);
+        //         // point_vector = point_rotation_distortion * point_vector + point_translation_distortion;
 
-                Eigen::Vector4d point_vector(point.x, point.y, point.z, 1.0);
-                point_vector = T_star *point_vector;
+        //         Eigen::Vector4d point_vector(point.x, point.y, point.z, 1.0);
+        //         point_vector = T_star *point_vector;
 
-                point.x = point_vector.x();
-                point.y = point_vector.y();
-                point.z = point_vector.z();
-                if (!pcl::isFinite(point))
-                {
-                    RCLCPP_INFO_ONCE(get_logger(), "point NAN!");
-                    RCLCPP_INFO_ONCE(get_logger(), "point dt: %f", point_dt);
-                    RCLCPP_INFO_ONCE(get_logger(), "point translation: %f %f %f", point_translation_distortion.x(), point_translation_distortion.y(), point_translation_distortion.z());
-                    RCLCPP_INFO_ONCE(get_logger(), "point rotation: %f %f %f %f", point_rotation_distortion.w(), point_rotation_distortion.x(), point_rotation_distortion.y(), point_rotation_distortion.z());
-                    RCLCPP_INFO_ONCE(get_logger(), "point jerk: %f %f %f", jerk.x(), jerk.y(), jerk.z());
-                    RCLCPP_INFO_ONCE(get_logger(), "point alpha: %f %f %f", alpha.x(), alpha.y(), alpha.z());
-                }
+        //         point.x = point_vector.x();
+        //         point.y = point_vector.y();
+        //         point.z = point_vector.z();
+        //         if (!pcl::isFinite(point))
+        //         {
+        //             RCLCPP_INFO_ONCE(get_logger(), "point NAN!");
+        //             RCLCPP_INFO_ONCE(get_logger(), "point dt: %f", point_dt);
+        //             RCLCPP_INFO_ONCE(get_logger(), "point translation: %f %f %f", point_translation_distortion.x(), point_translation_distortion.y(), point_translation_distortion.z());
+        //             RCLCPP_INFO_ONCE(get_logger(), "point rotation: %f %f %f %f", point_rotation_distortion.w(), point_rotation_distortion.x(), point_rotation_distortion.y(), point_rotation_distortion.z());
+        //             RCLCPP_INFO_ONCE(get_logger(), "point jerk: %f %f %f", jerk.x(), jerk.y(), jerk.z());
+        //             RCLCPP_INFO_ONCE(get_logger(), "point alpha: %f %f %f", alpha.x(), alpha.y(), alpha.z());
+        //         }
 
-                // get next imu preintegration state when state gets to old
-                if ((dt_i + frame_start_time) >= preint_states[i].time && preint_states.size() >= i+2){
-                    i++;
-                    sync_time = frame_start_time - preint_states[i].time;
-                    // set new state0..
-                    double state_dt = preint_states[i+1].time - preint_states[i].time;
-                    if (state_dt > 1.0 || state_dt < 0.0){
-                        RCLCPP_INFO(get_logger(), "bad state_dt! %f = %f - %f ", state_dt, preint_states[i+1].time,  preint_states[i].time);
-                        state_dt = 0.01;
-                        RCLCPP_INFO(get_logger(), "bad state undistort state%i dt %f pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i-1,state_dt, state0.pos.x(), state0.pos.y(), state0.pos.z(), state0.vel.x(), state0.vel.y(), state0.vel.z(), state0.acc.x(), state0.acc.y(), state0.acc.z() , jerk.x(), jerk.y(), jerk.z() );
-                    }
-                    jerk = 1.0 / state_dt * (preint_states[i+1].ori * preint_states[i+1].acc  - preint_states[i].ori * preint_states[i].acc);
-                    alpha = 1.0 / state_dt * (preint_states[i+1].ang - preint_states[i].ang);
-                    state0.pos = preint_states[i].pos; //+ preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
-                    state0.vel = preint_states[i].vel; //+ (preint_states[i].ori *preint_states[i].acc) *sync_time;
-                    state0.acc = preint_states[i].acc; //+ jerk *sync_time;
-                    state0.ori = preint_states[i].ori; //* deltaQ(preint_states[i].ang * sync_time) * deltaQ(0.5 * alpha * sync_time*sync_time);
-                    // RCLCPP_INFO(get_logger(), "undistort state%i pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i, state0.pos.x(), state0.pos.y(), state0.pos.z(), state0.vel.x(), state0.vel.y(), state0.vel.z(), state0.acc.x(), state0.acc.y(), state0.acc.z() , jerk.x(), jerk.y(), jerk.z() );
+        //         // get next imu preintegration state when state gets to old
+        //         if ((dt_i + frame_start_time) >= preint_states[i].time && preint_states.size() >= i+2){
+        //             i++;
+        //             sync_time = frame_start_time - preint_states[i].time;
+        //             // set new state0..
+        //             double state_dt = preint_states[i+1].time - preint_states[i].time;
+        //             if (state_dt > 1.0 || state_dt < 0.0){
+        //                 RCLCPP_INFO(get_logger(), "bad state_dt! %f = %f - %f ", state_dt, preint_states[i+1].time,  preint_states[i].time);
+        //                 state_dt = 0.01;
+        //                 RCLCPP_INFO(get_logger(), "bad state undistort state%i dt %f pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i-1,state_dt, state0.pos.x(), state0.pos.y(), state0.pos.z(), state0.vel.x(), state0.vel.y(), state0.vel.z(), state0.acc.x(), state0.acc.y(), state0.acc.z() , jerk.x(), jerk.y(), jerk.z() );
+        //             }
+        //             jerk = 1.0 / state_dt * (preint_states[i+1].ori * preint_states[i+1].acc  - preint_states[i].ori * preint_states[i].acc);
+        //             alpha = 1.0 / state_dt * (preint_states[i+1].ang - preint_states[i].ang);
+        //             state0.pos = preint_states[i].pos; //+ preint_states[i].vel * sync_time + 0.5 * (preint_states[i].ori *preint_states[i].acc) *sync_time*sync_time + 1.0/6.0 * jerk * sync_time*sync_time*sync_time;
+        //             state0.vel = preint_states[i].vel; //+ (preint_states[i].ori *preint_states[i].acc) *sync_time;
+        //             state0.acc = preint_states[i].acc; //+ jerk *sync_time;
+        //             state0.ori = preint_states[i].ori; //* deltaQ(preint_states[i].ang * sync_time) * deltaQ(0.5 * alpha * sync_time*sync_time);
+        //             // RCLCPP_INFO(get_logger(), "undistort state%i pos %f %f %f, vel %f %f %f acc %f %f %f jerk %f %f %f",i, state0.pos.x(), state0.pos.y(), state0.pos.z(), state0.vel.x(), state0.vel.y(), state0.vel.z(), state0.acc.x(), state0.acc.y(), state0.acc.z() , jerk.x(), jerk.y(), jerk.z() );
 
-                }
-            }
-        }
+        //         }
+        //     }
+        // }
 
         template <typename PointT>
         void undistortCloudInterpolated(const boost::shared_ptr<pcl::PointCloud<PointT>> &cloud_in, boost::shared_ptr<pcl::PointCloud<PointT>> &cloud_out,const Eigen::Quaterniond q, const Eigen::Vector3d t)
@@ -3567,6 +3568,7 @@ class LidarOdometry : public rclcpp::Node
             new_pose.y = reg_translation.y();
             new_pose.z = reg_translation.z();
             new_pose.idx = odometry_pose_info->points.size();
+            // new_pose.time = toSec(time_new_cloud);
             new_pose.time = time_new_cloud.nanoseconds();
 
             odometry_pose_info->push_back(new_pose);
@@ -3591,7 +3593,7 @@ class LidarOdometry : public rclcpp::Node
             new_pose.y = reg_translation.y();
             new_pose.z = reg_translation.z();
             new_pose.idx = keyframe_pose.frame_idx;
-            new_pose.time = time_new_cloud.nanoseconds();
+            new_pose.time = toSec(time_new_cloud);
 
             keyframe_pose_info->push_back(new_pose);
 
@@ -4048,6 +4050,7 @@ class LidarOdometry : public rclcpp::Node
             // PoseInfo latestPoseInfo = odometry_pose_info->points[latest_keyframe_idx - 1];
             PoseInfo latestPoseInfo = odometry_pose_info->points[odometry_pose_info->points.size() -1 ];
             odom.header.stamp = cloud_header.stamp;
+            // odom.header.stamp = toStamp(latestPoseInfo.time);
             odom.pose.pose.orientation.w = latestPoseInfo.qw;
             odom.pose.pose.orientation.x = latestPoseInfo.qx;
             odom.pose.pose.orientation.y = latestPoseInfo.qy;
@@ -4107,8 +4110,9 @@ class LidarOdometry : public rclcpp::Node
             nav_msgs::msg::Odometry odom_msg;
             odom_msg.child_frame_id = "ins";
             odom_msg.header.frame_id = "odom";
-            odom_msg.header.stamp.sec = (int)floor(state.time);
-            odom_msg.header.stamp.nanosec = (int)((state.time - odom_msg.header.stamp.sec)*1e9);
+            odom_msg.header.stamp = toHeaderStamp(state.time);
+            // odom_msg.header.stamp.sec = (int)floor(state.time);
+            // odom_msg.header.stamp.nanosec = (int)((state.time - odom_msg.header.stamp.sec)*1e9);
             
             // data
             odom_msg.pose.pose.position.x = state.pos.x();
@@ -4166,8 +4170,9 @@ class LidarOdometry : public rclcpp::Node
             nav_msgs::msg::Odometry odom_msg;
             odom_msg.child_frame_id = "ins";
             odom_msg.header.frame_id = "odom";
-            odom_msg.header.stamp.sec = (int)floor(state.time);
-            odom_msg.header.stamp.nanosec = (int)((state.time - odom_msg.header.stamp.sec)*1e9);
+            odom_msg.header.stamp = toHeaderStamp(state.time);
+            // odom_msg.header.stamp.sec = (int)floor(state.time);
+            // odom_msg.header.stamp.nanosec = (int)((state.time - odom_msg.header.stamp.sec)*1e9);
             // data
             odom_msg.pose.pose.position.x = state.pos.x();
             odom_msg.pose.pose.position.y = state.pos.y();
@@ -4216,9 +4221,9 @@ class LidarOdometry : public rclcpp::Node
         {
             // PoseInfo latestPoseInfo = odometry_pose_info->points[latest_keyframe_idx - 1];
             PoseInfo latestPoseInfo = keyframe_pose_info->points[keyframe_pose_info->points.size() - 1 ];
-            // odom.header.stamp = keyframe_pose_info.time;
-            odom.header.stamp.sec = (int)floor(latestPoseInfo.time);
-            odom.header.stamp.nanosec = (int)((latestPoseInfo.time - odom.header.stamp.sec)*1e9);
+            odom.header.stamp = toStamp(latestPoseInfo.time);
+            // odom.header.stamp.sec = (int)floor(latestPoseInfo.time);
+            // odom.header.stamp.nanosec = (int)((latestPoseInfo.time - odom.header.stamp.sec)*1e9);
             odom.pose.pose.orientation.w = latestPoseInfo.qw;
             odom.pose.pose.orientation.x = latestPoseInfo.qx;
             odom.pose.pose.orientation.y = latestPoseInfo.qy;
