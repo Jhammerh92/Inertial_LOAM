@@ -92,7 +92,7 @@ class Backend : public rclcpp::Node
         pcl::VoxelGrid<PointType> global_map_ds_filter;
         pcl::VoxelGrid<PointType> long_term_ds_filter;
 
-        vector<boost::shared_ptr<pcl::PointCloud<PointType>>> all_clouds;
+        deque<boost::shared_ptr<pcl::PointCloud<PointType>>> all_clouds;
 
         pcl::PointCloud<PointType>::Ptr global_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
         pcl::PointCloud<PointType>::Ptr global_cloud_ds = boost::make_shared<pcl::PointCloud<PointType>>();
@@ -471,35 +471,39 @@ class Backend : public rclcpp::Node
                 return;
             }
             
+            // new_global_map_part->clear();
+
             // global_cloud->clear();
             // pcl::PointCloud<PointType> transformed_cloud;
-            pcl::PointCloud<PointType>::Ptr transformed_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
+            // pcl::PointCloud<PointType>::Ptr transformed_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
+            pcl::PointCloud<PointType>::Ptr new_global_map_part = boost::make_shared<pcl::PointCloud<PointType>>();
+            
             // for (unsigned i = 0; i < odometry_pose_info->points.size(); i++)
+
             // #pragma omp for
-            for (size_t i = index_published ; i < all_clouds.size(); i++)
+            for (size_t i = 0 ; i < all_clouds.size(); i++)
+            // for (size_t i = index_published ; i < all_clouds.size(); i++)
             {
-                // Eigen::Quaterniond q_po(odometry_pose_info->points[i].qw,
-                //                         odometry_pose_info->points[i].qx,
-                //                         odometry_pose_info->points[i].qy,
-                //                         odometry_pose_info->points[i].qz);
 
-                // Eigen::Vector3d t_po(odometry_pose_info->points[i].x,
-                //                     odometry_pose_info->points[i].y,
-                //                     odometry_pose_info->points[i].z);
-
-
-                // pcl::transformPointCloudWithNormals<PointType>(*all_clouds[i], transformed_cloud, t_po, q_po);
-                *transformed_cloud = *all_clouds[i];
-                *global_cloud += *transformed_cloud;
+                // *transformed_cloud = *all_clouds.front();
+                // *new_global_map_part += *transformed_cloud;
+                *new_global_map_part += *all_clouds.front();
+                all_clouds.pop_front();
                 index_published = i+1;
             }
                 
-            pcl::PointCloud<PointType>::Ptr global_cloud_copy = boost::make_shared<pcl::PointCloud<PointType>>(*global_cloud);
+            // pcl::PointCloud<PointType>::Ptr global_cloud_copy = boost::make_shared<pcl::PointCloud<PointType>>(*global_cloud);
 
-            pcl::copyPointCloud(*global_cloud, *global_cloud_copy);
+            // pcl::copyPointCloud(*global_cloud, *global_cloud_copy);
 
-            global_map_ds_filter.setInputCloud(global_cloud_copy);
-            global_map_ds_filter.filter(*global_cloud_ds);
+            global_map_ds_filter.setInputCloud(new_global_map_part);
+            global_map_ds_filter.filter(*new_global_map_part);
+            *global_cloud_ds += *new_global_map_part;
+            new_global_map_part->clear();
+
+
+            // global_map_ds_filter.setInputCloud(global_cloud);
+            // global_map_ds_filter.filter(*global_cloud_ds);
 
         }
 
