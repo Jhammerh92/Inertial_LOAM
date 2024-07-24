@@ -3,6 +3,8 @@
 
 // #include "inertial_loam/point_type.h" // attempt to create a custom point cloud point type
 
+#include "rclcpp/rclcpp.hpp"
+
 // #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/imu.hpp>

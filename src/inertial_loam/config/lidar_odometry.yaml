@@ -1,7 +1,7 @@
 lidar_odometry:
   ros__parameters:
     # voxel downsampling parameters
-    ds_voxel_size: 1.0 # <0.05 current cloud downsample size
+    ds_voxel_size: 0.0 # <0.05 current cloud downsample size
     ds_voxel_size_lc: 0.5 # 0.01 - local map down sample size
     ds_voxel_size_kf: 0.5 # 0.01 - keyframe map down sample size
     
@@ -23,7 +23,7 @@ lidar_odometry:
     icp_max_coarse_iterations: 0 # < 5
     icp_max_correspondence_distance: 0.50 # should be less than voxelsize of source OBS this works as NDT resultion when using NDT
     coarse_correspondence_factor: 10
-    local_map_width: 2 # if 0 all previous keyframes are pushed to local map indefinitely
+    local_map_width: 20 # if 0 all previous keyframes are pushed to local map indefinitely
     local_map_init_frames_count: 10
 
     # imu fusion parameters

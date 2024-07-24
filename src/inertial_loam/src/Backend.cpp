@@ -496,14 +496,14 @@ class Backend : public rclcpp::Node
 
             // pcl::copyPointCloud(*global_cloud, *global_cloud_copy);
 
-            global_map_ds_filter.setInputCloud(new_global_map_part);
-            global_map_ds_filter.filter(*new_global_map_part);
-            *global_cloud_ds += *new_global_map_part;
-            new_global_map_part->clear();
+            // global_map_ds_filter.setInputCloud(new_global_map_part);
+            // global_map_ds_filter.filter(*new_global_map_part);
+            // *global_cloud_ds += *new_global_map_part;
+            // new_global_map_part->clear();
 
-
-            // global_map_ds_filter.setInputCloud(global_cloud);
-            // global_map_ds_filter.filter(*global_cloud_ds);
+            *global_cloud += *new_global_map_part;
+            global_map_ds_filter.setInputCloud(global_cloud);
+            global_map_ds_filter.filter(*global_cloud_ds);
 
         }
 

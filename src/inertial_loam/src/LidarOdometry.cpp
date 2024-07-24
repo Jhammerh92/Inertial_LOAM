@@ -635,7 +635,7 @@ void INS::predictionIntegrate(double dt, int steps)
     predict_states.clear(); // clear predict_states to make sure it is empty
     for (int i = 0; i < steps; i++){
 
-            predictConstVelocityStep(dt); // this writes to preint_state, but does not calc jerk and alpha
+            predictConstVelocityStep(dt); // this writes to predict_state, but does not calc jerk and alpha
             new_predict_state = predict_state;
             this_predict_state.time = predict_state.time + i*dt;
             this_predict_state.dt = dt;
@@ -1174,11 +1174,11 @@ class LidarOdometry : public rclcpp::Node
             declare_parameter("icp_max_coarse_iterations", 5); 
             get_parameter("icp_max_coarse_iterations", icp_max_coarse_iterations_);
 
-            declare_parameter("icp_max_correspondance_distance", 0.5); 
-            get_parameter("icp_max_correspondance_distance", icp_max_correspondence_distance_);
+            declare_parameter("icp_max_correspondence_distance", 0.5); 
+            get_parameter("icp_max_correspondence_distance", icp_max_correspondence_distance_);
 
-            declare_parameter("course_correspondence_factor", 10); 
-            get_parameter("course_correspondence_factor", coarse_correspondence_factor_);
+            declare_parameter("coarse_correspondence_factor", 10); 
+            get_parameter("coarse_correspondence_factor", coarse_correspondence_factor_);
 
             declare_parameter("local_map_width", 20); 
             get_parameter("local_map_width", local_map_width_);
@@ -1274,7 +1274,7 @@ class LidarOdometry : public rclcpp::Node
             rclcpp::SubscriptionOptions options2; // create subscribver options
             options2.callback_group = subscriber_cb_group2_; // add callbackgroup to subscriber options
 
-            run_timer = this->create_wall_timer(20ms, std::bind(&LidarOdometry::run, this), run_cb_group_); // the process timer 
+            run_timer = this->create_wall_timer(1ms, std::bind(&LidarOdometry::run, this), run_cb_group_); // the process timer 
 
             // save_data_service = this->create_service<std_srvs::srv::Trigger>("save_odometry_data", &LidarOdometry::save_data, rmw_qos_profile_services_default , subscriber_cb_group_);
             save_data_service = this->create_service<std_srvs::srv::Trigger>("save_odometry_data", std::bind(&LidarOdometry::saveDataService,this, std::placeholders::_1, std::placeholders::_2));
@@ -3884,9 +3884,10 @@ class LidarOdometry : public rclcpp::Node
             // pcl::transformPointCloudWithNormals<PointType>(*cropped_local_map, *cropped_local_map, T);
             
             sensor_msgs::msg::PointCloud2 msgs;
-            #ifndef __INTELLISENSE__ 
-            pcl::toROSMsg(*target_map, msgs);
-            #endif
+            // #ifndef __INTELLISENSE__ 
+            // pcl::toROSMsg(*target_map, msgs);
+            // #endif
+            toROSMsg(*target_map, msgs);
             // msgs.header.stamp = ros::Time().fromSec(time_new_cloud);
             msgs.header.stamp = time_new_cloud; 
             // msgs.header.frame_id = frame_id;
@@ -4432,7 +4433,7 @@ class LidarOdometry : public rclcpp::Node
                 // buildLocalMapAroundKeyFrame();
                 publishLocalMap();
                 // registration_->setInputTarget(local_map_ds);
-                setRegistrationTarget(local_map_ds);
+                setRegistrationTarget(target_map);
                 init_map_built = true;
             }
 

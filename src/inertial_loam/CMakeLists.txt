@@ -19,10 +19,9 @@ if(POLICY CMP0074)
   cmake_policy(SET CMP0074 OLD)
 endif()
 
-set(pclomp_DIR "/home/slamnuc/ros2_loam_ws/install/pclomp/lib/cmake/pclomp")
+# set(pclomp_DIR "/home/slamnuc/ros2_loam_ws/install/pclomp/lib/cmake/pclomp")
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -38,7 +37,7 @@ find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(ndt_omp_ros2 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(pclomp REQUIRED)
+# find_package(pclomp REQUIRED)
 find_package(OpenMP)
 # uncomment the following section in order to fill in
 # further dependencies manually.
